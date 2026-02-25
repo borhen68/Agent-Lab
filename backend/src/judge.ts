@@ -69,6 +69,15 @@ export interface JudgeResult {
   criteriaWeights: JudgeWeights;
   mode?: 'single' | 'consensus';
   panelId?: number;
+  disagreementIndex?: number;
+  panelAgreement?: number;
+  confidenceLevel?: 'high' | 'medium' | 'low';
+  confidenceReason?: string;
+  confidencePassed?: boolean;
+  winnerMargin?: number;
+  winnerTotal?: number;
+  winnerAccuracy?: number;
+  evidenceCoverage?: number;
   runs?: Array<{
     panelId?: number;
     winner: string;

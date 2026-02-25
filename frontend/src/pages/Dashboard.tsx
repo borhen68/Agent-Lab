@@ -45,6 +45,15 @@ interface JudgeResult {
     winner: string;
     summary: string;
   }>;
+  disagreementIndex?: number;
+  panelAgreement?: number;
+  confidenceLevel?: 'high' | 'medium' | 'low';
+  confidenceReason?: string;
+  confidencePassed?: boolean;
+  winnerMargin?: number;
+  winnerTotal?: number;
+  winnerAccuracy?: number;
+  evidenceCoverage?: number;
 }
 
 interface MetricEvidence {
@@ -105,6 +114,18 @@ interface SkillManifest {
 
 type ProviderId = 'anthropic' | 'gemini' | 'openai';
 type JudgeMode = 'single' | 'consensus';
+
+interface ConfidenceGateDecision {
+  enabled: boolean;
+  passed: boolean;
+  winnerTotal: number;
+  winnerAccuracy: number;
+  marginToSecond: number;
+  minTotal: number;
+  minMargin: number;
+  minAccuracy: number;
+  reason: string;
+}
 
 interface ProviderStatus {
   provider: ProviderId;
@@ -397,6 +418,7 @@ export default function Dashboard() {
   const [judging, setJudging] = useState(false);
   const [winnerId, setWinnerId] = useState<string | null>(null);
   const [judgeResult, setJudgeResult] = useState<JudgeResult | null>(null);
+  const [confidenceGate, setConfidenceGate] = useState<ConfidenceGateDecision | null>(null);
   const [agents, setAgents] = useState<Record<string, AgentState>>(defaultAgents());
   const [activeTab, setActiveTab] = useState('agent-1');
   const [availableSkills, setAvailableSkills] = useState<SkillManifest[]>([]);
@@ -441,6 +463,7 @@ export default function Dashboard() {
 
     socketRef.current.on('task_update', (update: any) => {
       if (update?.type === 'orchestration_started') {
+        setConfidenceGate(null);
         const incoming: Array<AgentProfile | string> = Array.isArray(update.agents) ? update.agents : [];
         const rawDomain = (update && typeof update.domain === 'object' && update.domain !== null)
           ? update.domain as DomainRunMeta
@@ -541,7 +564,9 @@ export default function Dashboard() {
       if (update?.type === 'orchestration_complete') {
         const incomingJudge = update.judgeResult as JudgeResult | undefined;
         const incomingWinner = update.winner?.agentId as string | undefined;
+        const incomingGate = update.confidenceGate as ConfidenceGateDecision | undefined;
         setJudgeResult(incomingJudge || null);
+        setConfidenceGate(incomingGate || null);
         setWinnerId(incomingWinner || null);
         setLoading(false);
         setJudging(false);
@@ -704,6 +729,7 @@ export default function Dashboard() {
     setTaskId(null);
     setWinnerId(null);
     setJudgeResult(null);
+    setConfidenceGate(null);
     setActiveDomain(null);
     setActiveTab('agent-1');
     setAgents(defaultAgents());
@@ -1021,6 +1047,22 @@ export default function Dashboard() {
             <div className="mt-4 pt-4 border-t border-white/10 text-xs text-white/45 flex flex-wrap gap-x-4 gap-y-2">
               <span>Mode: <span className="text-white/65">{judgeResult.mode || judgeMode}</span></span>
               <span>Prompt: <span className="text-white/65">{judgeResult.judgePromptVersion || judgePromptVersion}</span></span>
+              {(judgeResult.confidenceLevel || confidenceGate) && (
+                <span>
+                  Trust:
+                  <span
+                    className={`ml-1 rounded-full px-2 py-0.5 border ${
+                      (judgeResult.confidenceLevel === 'high')
+                        ? 'border-emerald-500/50 text-emerald-300'
+                        : (judgeResult.confidenceLevel === 'low' || confidenceGate?.passed === false)
+                          ? 'border-red-500/50 text-red-300'
+                          : 'border-amber-500/50 text-amber-300'
+                    }`}
+                  >
+                    {(judgeResult.confidenceLevel || (confidenceGate?.passed ? 'medium' : 'low')).toUpperCase()}
+                  </span>
+                </span>
+              )}
               {judgeResult.criteriaWeights && (
                 <span>
                   Weights:
@@ -1035,7 +1077,24 @@ export default function Dashboard() {
               {judgeResult.runs && judgeResult.runs.length > 0 && (
                 <span>Panels: <span className="text-white/65">{judgeResult.runs.length}</span></span>
               )}
+              {typeof judgeResult.evidenceCoverage === 'number' && (
+                <span>Evidence: <span className="text-white/65">{Math.round(judgeResult.evidenceCoverage * 100)}%</span></span>
+              )}
+              {typeof judgeResult.disagreementIndex === 'number' && (
+                <span>Disagreement: <span className="text-white/65">{Math.round(judgeResult.disagreementIndex * 100)}%</span></span>
+              )}
+              {typeof judgeResult.panelAgreement === 'number' && (
+                <span>Panel Agreement: <span className="text-white/65">{Math.round(judgeResult.panelAgreement * 100)}%</span></span>
+              )}
+              {typeof judgeResult.winnerMargin === 'number' && (
+                <span>Winner Margin: <span className="text-white/65">{judgeResult.winnerMargin.toFixed(2)}</span></span>
+              )}
             </div>
+            {(judgeResult.confidenceReason || confidenceGate?.reason) && (
+              <p className="mt-2 text-xs text-white/35">
+                {judgeResult.confidenceReason || confidenceGate?.reason}
+              </p>
+            )}
           </div>
         )}
 

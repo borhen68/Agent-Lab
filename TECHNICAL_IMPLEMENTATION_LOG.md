@@ -51,7 +51,7 @@ Create a full-stack multi-agent lab where multiple personas race on the same tas
   - Added objective coding score blending (`coding-v1`) based on verification/test/lint telemetry.
   - `/api/system/status` now includes domain profile metadata for UI/domain-aware controls.
 - Go-live gap closures completed:
-  - Web-search reliability improved with provider chain `Tavily -> Serper -> DuckDuckGo`.
+  - Web-search reliability improved with provider chain `Tavily -> Serper` and explicit no-key configuration errors.
   - Confidence gate added in orchestration with configurable thresholds and low-confidence winner flagging.
   - OpenAI provider added alongside Anthropic + Gemini (runner, judge, provider status, UI selector).
 - Open-source readiness scaffolding completed:
@@ -410,9 +410,9 @@ Registry behavior:
 ## 4.6 Skill handlers (implemented)
 
 1. `web-search`
-- Uses DuckDuckGo HTML endpoint.
-- Extracts title/url/snippet from results page.
-- Returns structured results list.
+- Uses Tavily as primary provider and Serper as secondary fallback.
+- Returns structured title/url/snippet results.
+- Returns a clear setup error when neither `TAVILY_API_KEY` nor `SERPER_API_KEY` is configured.
 
 2. `code-executor`
 - Runs JS (`node`) or Python (`python3`) in temp dir.

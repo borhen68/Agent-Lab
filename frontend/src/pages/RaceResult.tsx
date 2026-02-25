@@ -86,6 +86,13 @@ interface TaskDetail {
     judgePromptVersion?: string;
     criteriaWeights?: JudgeWeights | unknown;
     judgeRuns?: unknown;
+    confidencePassed?: boolean;
+    confidenceLevel?: 'high' | 'medium' | 'low';
+    confidenceReason?: string;
+    winnerMargin?: number;
+    disagreementIndex?: number;
+    panelAgreement?: number;
+    evidenceCoverage?: number;
     scores: JudgeScore[] | unknown;
   } | null;
   skillUsages: SkillUsageRow[];
@@ -674,6 +681,22 @@ export default function RaceResult() {
                 <div className="text-xs text-white/45 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mb-4">
                   <span>Mode: <span className="text-white/65">{task.judgeResult.judgeMode || 'single'}</span></span>
                   <span>Prompt: <span className="text-white/65">{task.judgeResult.judgePromptVersion || 'judge-v2'}</span></span>
+                  {task.judgeResult.confidenceLevel && (
+                    <span>
+                      Trust:
+                      <span
+                        className={`ml-1 rounded-full px-2 py-0.5 border ${
+                          task.judgeResult.confidenceLevel === 'high'
+                            ? 'border-emerald-500/50 text-emerald-300'
+                            : task.judgeResult.confidenceLevel === 'low'
+                              ? 'border-red-500/50 text-red-300'
+                              : 'border-amber-500/50 text-amber-300'
+                        }`}
+                      >
+                        {task.judgeResult.confidenceLevel.toUpperCase()}
+                      </span>
+                    </span>
+                  )}
                   {asJudgeWeights(task.judgeResult.criteriaWeights) && (
                     <span>
                       Weights:
@@ -686,7 +709,22 @@ export default function RaceResult() {
                       </span>
                     </span>
                   )}
+                  {typeof task.judgeResult.evidenceCoverage === 'number' && (
+                    <span>Evidence: <span className="text-white/65">{Math.round(task.judgeResult.evidenceCoverage * 100)}%</span></span>
+                  )}
+                  {typeof task.judgeResult.disagreementIndex === 'number' && (
+                    <span>Disagreement: <span className="text-white/65">{Math.round(task.judgeResult.disagreementIndex * 100)}%</span></span>
+                  )}
+                  {typeof task.judgeResult.panelAgreement === 'number' && (
+                    <span>Panel Agreement: <span className="text-white/65">{Math.round(task.judgeResult.panelAgreement * 100)}%</span></span>
+                  )}
+                  {typeof task.judgeResult.winnerMargin === 'number' && (
+                    <span>Winner Margin: <span className="text-white/65">{task.judgeResult.winnerMargin.toFixed(2)}</span></span>
+                  )}
                 </div>
+                {task.judgeResult.confidenceReason && (
+                  <p className="text-xs text-white/35 text-center mb-4">{task.judgeResult.confidenceReason}</p>
+                )}
                 {judgeScores.length > 0 && (
                   <div className="grid grid-cols-3 gap-4">
                     {[...judgeScores].sort((a, b) => b.total - a.total).map((score, i) => {

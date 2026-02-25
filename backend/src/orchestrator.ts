@@ -64,6 +64,18 @@ export interface ConfidenceGateDecision {
   reason: string;
 }
 
+interface TrustSignals {
+  confidenceLevel: 'high' | 'medium' | 'low';
+  confidenceReason: string;
+  confidencePassed: boolean;
+  winnerMargin: number;
+  winnerTotal: number;
+  winnerAccuracy: number;
+  evidenceCoverage: number;
+  disagreementIndex: number;
+  panelAgreement?: number;
+}
+
 function buildEnrichedPrompt(basePrompt: string, hints: string[]): string {
   if (hints.length === 0) return basePrompt;
 
@@ -139,6 +151,46 @@ function evaluateConfidenceGate(judgeResult: JudgeResult): ConfidenceGateDecisio
     reason: passed
       ? `Gate passed (total ${winnerTotal}/40, margin ${marginToSecond.toFixed(2)}, accuracy ${winnerAccuracy.toFixed(2)}).`
       : reasons.join('; '),
+  };
+}
+
+function computeEvidenceCoverage(score?: JudgeScore): number {
+  if (!score?.metricEvidence) return 0;
+  const evidences = Object.values(score.metricEvidence);
+  if (evidences.length === 0) return 0;
+
+  const supportedCount = evidences.filter((evidence) => {
+    const quote = evidence.quote.trim().toLowerCase();
+    const reason = evidence.reason.trim();
+    if (!reason) return false;
+    return quote.length > 0 && quote !== '[no direct quote provided]';
+  }).length;
+
+  return Number((supportedCount / evidences.length).toFixed(4));
+}
+
+function deriveConfidenceLevel(
+  confidenceGate: ConfidenceGateDecision,
+  evidenceCoverage: number,
+  disagreementIndex: number
+): { level: 'high' | 'medium' | 'low'; reason: string } {
+  if (!confidenceGate.passed) {
+    return {
+      level: 'low',
+      reason: `Gate failed: ${confidenceGate.reason}`,
+    };
+  }
+
+  if (evidenceCoverage >= 0.75 && disagreementIndex <= 0.12) {
+    return {
+      level: 'high',
+      reason: `Gate passed with strong evidence (${Math.round(evidenceCoverage * 100)}%) and low judge disagreement (${Math.round(disagreementIndex * 100)}%).`,
+    };
+  }
+
+  return {
+    level: 'medium',
+    reason: `Gate passed but trust is mixed (evidence ${Math.round(evidenceCoverage * 100)}%, disagreement ${Math.round(disagreementIndex * 100)}%).`,
   };
 }
 
@@ -303,6 +355,27 @@ function resolveWinner(scores: JudgeScore[]): string {
     )[0]?.agentId || scores[0]?.agentId || 'agent-1';
 }
 
+function computeConsensusDisagreementIndex(
+  judgeRuns: JudgeResult[],
+  agentIds: string[]
+): number {
+  if (judgeRuns.length <= 1 || agentIds.length === 0) return 0;
+
+  const perAgentSpread = agentIds.map((agentId) => {
+    const totals = judgeRuns
+      .map((run) => run.scores.find((score) => score.agentId === agentId)?.total ?? 0)
+      .filter((total) => Number.isFinite(total));
+
+    if (totals.length <= 1) return 0;
+    const min = Math.min(...totals);
+    const max = Math.max(...totals);
+    return (max - min) / 40;
+  });
+
+  const averageSpread = perAgentSpread.reduce((sum, value) => sum + value, 0) / perAgentSpread.length;
+  return Number(averageSpread.toFixed(4));
+}
+
 function aggregateConsensusJudgeRuns(
   judgeRuns: JudgeResult[],
   successfulResults: AgentRunResult[],
@@ -353,6 +426,8 @@ function aggregateConsensusJudgeRuns(
   const penalizedScores = applyDiversityPenalty(scores, successfulResults);
   const winner = resolveWinner(penalizedScores);
   const winnerVotes = judgeRuns.filter((run) => run.winner === winner).length;
+  const disagreementIndex = computeConsensusDisagreementIndex(judgeRuns, agentIds);
+  const panelAgreement = Number((winnerVotes / Math.max(1, judgeRuns.length)).toFixed(4));
 
   return {
     winner,
@@ -362,6 +437,8 @@ function aggregateConsensusJudgeRuns(
     judgePromptVersion,
     criteriaWeights,
     mode: 'consensus',
+    disagreementIndex,
+    panelAgreement,
     runs: judgeRuns.map((run) => ({
       panelId: run.panelId,
       winner: run.winner,
@@ -639,6 +716,31 @@ export async function orchestrateTask(
     }
 
     const confidenceGate = evaluateConfidenceGate(judgeResult);
+    const winnerResult = results.find((result) => result.agentId === judgeResult.winner);
+    if (!winnerResult) {
+      throw new Error(`Judge winner ${judgeResult.winner} not found in agent results`);
+    }
+
+    const winnerScore = judgeResult.scores.find((score) => score.agentId === winnerResult.agentId);
+    const evidenceCoverage = computeEvidenceCoverage(winnerScore);
+    const disagreementIndex = Number((judgeResult.disagreementIndex ?? 0).toFixed(4));
+    const trust = deriveConfidenceLevel(
+      confidenceGate,
+      evidenceCoverage,
+      disagreementIndex
+    );
+    const trustSignals: TrustSignals = {
+      confidenceLevel: trust.level,
+      confidenceReason: trust.reason,
+      confidencePassed: confidenceGate.passed,
+      winnerMargin: confidenceGate.marginToSecond,
+      winnerTotal: confidenceGate.winnerTotal,
+      winnerAccuracy: confidenceGate.winnerAccuracy,
+      evidenceCoverage,
+      disagreementIndex,
+      panelAgreement: judgeResult.panelAgreement,
+    };
+
     if (!confidenceGate.passed) {
       logger.warn(
         `Confidence gate failed for task ${taskId}: ${confidenceGate.reason}`
@@ -649,12 +751,11 @@ export async function orchestrateTask(
       };
     }
 
-    const winnerResult = results.find((result) => result.agentId === judgeResult.winner);
-    if (!winnerResult) {
-      throw new Error(`Judge winner ${judgeResult.winner} not found in agent results`);
-    }
+    judgeResult = {
+      ...judgeResult,
+      ...trustSignals,
+    };
 
-    const winnerScore = judgeResult.scores.find((score) => score.agentId === winnerResult.agentId);
     const normalizedWinnerScore = (winnerScore?.total ?? 20) / 40;
     const baselineScore = await computeCategoryBaseline(prisma, resolvedTaskCategory, taskId);
     const winnerLift = Number(((winnerScore?.total ?? 20) - baselineScore).toFixed(2));
@@ -711,7 +812,10 @@ export async function orchestrateTask(
             `judge_winner:${judgeResult.winner}`,
             `judge_total:${winnerScore?.total ?? 0}`,
             `confidence_gate:${confidenceGate.passed ? 'pass' : 'fail'}`,
+            `confidence_level:${judgeResult.confidenceLevel || 'medium'}`,
             `confidence_reason:${confidenceGate.reason}`,
+            `evidence_coverage:${judgeResult.evidenceCoverage ?? 0}`,
+            `disagreement_index:${judgeResult.disagreementIndex ?? 0}`,
             `winner_margin:${confidenceGate.marginToSecond}`,
             `baseline:${baselineScore}`,
             `lift:${winnerLift}`,
@@ -735,6 +839,13 @@ export async function orchestrateTask(
           judgePromptVersion: judgeResult.judgePromptVersion || selectedPromptVersion,
           criteriaWeights: JSON.stringify(judgeResult.criteriaWeights || normalizedWeights),
           judgeRuns: judgeResult.runs ? JSON.stringify(judgeResult.runs) : undefined,
+          confidencePassed: judgeResult.confidencePassed ?? confidenceGate.passed,
+          confidenceLevel: judgeResult.confidenceLevel || 'medium',
+          confidenceReason: judgeResult.confidenceReason || confidenceGate.reason,
+          winnerMargin: judgeResult.winnerMargin ?? confidenceGate.marginToSecond,
+          disagreementIndex: judgeResult.disagreementIndex ?? 0,
+          panelAgreement: judgeResult.panelAgreement,
+          evidenceCoverage: judgeResult.evidenceCoverage ?? 0,
           scores: JSON.stringify(judgeResult.scores),
         },
         create: {
@@ -746,6 +857,13 @@ export async function orchestrateTask(
           judgePromptVersion: judgeResult.judgePromptVersion || selectedPromptVersion,
           criteriaWeights: JSON.stringify(judgeResult.criteriaWeights || normalizedWeights),
           judgeRuns: judgeResult.runs ? JSON.stringify(judgeResult.runs) : undefined,
+          confidencePassed: judgeResult.confidencePassed ?? confidenceGate.passed,
+          confidenceLevel: judgeResult.confidenceLevel || 'medium',
+          confidenceReason: judgeResult.confidenceReason || confidenceGate.reason,
+          winnerMargin: judgeResult.winnerMargin ?? confidenceGate.marginToSecond,
+          disagreementIndex: judgeResult.disagreementIndex ?? 0,
+          panelAgreement: judgeResult.panelAgreement,
+          evidenceCoverage: judgeResult.evidenceCoverage ?? 0,
           scores: JSON.stringify(judgeResult.scores),
         },
       }),

@@ -104,6 +104,13 @@ model JudgeResult {
   judgePromptVersion String @default("judge-v2")
   criteriaWeights String   @default("{\"accuracy\":0.3,\"completeness\":0.3,\"clarity\":0.2,\"insight\":0.2}")
   judgeRuns      String?
+  confidencePassed Boolean @default(true)
+  confidenceLevel  String  @default("medium")
+  confidenceReason String  @default("")
+  winnerMargin     Float   @default(0)
+  disagreementIndex Float  @default(0)
+  panelAgreement   Float?
+  evidenceCoverage Float   @default(0)
   scores         String
 
   createdAt      DateTime @default(now())

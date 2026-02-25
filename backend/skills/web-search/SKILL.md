@@ -9,8 +9,9 @@ inputs:
   - limit?: number (max results, default 5)
 outputs:
   - results: array of {title, url, snippet}
-  - provider: string (tavily | serper | duckduckgo)
+  - provider: string (tavily | serper)
 ---
 Use this skill when you need information that may be recent or that
 requires verification from external sources.
-Provider order: Tavily -> Serper -> DuckDuckGo fallback.
+Provider order: Tavily -> Serper.
+Set `TAVILY_API_KEY` (recommended) or `SERPER_API_KEY` in backend `.env`.

@@ -127,7 +127,7 @@ Folder: `backend/skills/*`
 `web-search` provider order:
 - Tavily (primary, recommended)
 - Serper (secondary)
-- DuckDuckGo HTML fallback
+- If both keys are missing, returns a clear configuration error
 
 ### Skill Discovery, Precedence, and Gating
 File: `backend/src/skills/registry.ts`

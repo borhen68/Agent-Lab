@@ -92,7 +92,7 @@ Local sample run snapshot (from `JudgeResult`, task `cmm26zhsq0001bogg6x9b6g9t`)
 
 ## Skills
 
-- `web-search` (Tavily -> Serper -> DuckDuckGo fallback)
+- `web-search` (Tavily -> Serper, explicit error if no search key configured)
 - `file-reader`
 - `calculator`
 - `code-executor`
