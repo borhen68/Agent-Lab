@@ -1,0 +1,173 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  prompt      String
+  status      String   @default("pending")
+  category    String   @default("general")
+  
+  results     TaskResult[]
+  strategies  Strategy[]
+  judgeResult JudgeResult?
+  skillUsages SkillUsage[]
+  learningObservations LearningObservation[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  completedAt DateTime?
+  
+  @@index([status])
+  @@index([category])
+  @@index([createdAt])
+}
+
+model TaskResult {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  
+  agentId   String
+  response  String
+  
+  tokensUsed Int
+  timeMs     Int
+  success    Boolean
+  
+  reasoning  String
+  telemetry  String?
+  
+  createdAt  DateTime @default(now())
+  
+  @@index([taskId])
+  @@index([agentId])
+  @@index([createdAt])
+}
+
+model Strategy {
+  id          String   @id @default(cuid())
+  taskId      String
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  
+  agentId     String
+  approach    String
+  
+  timesUsed   Int      @default(0)
+  successRate Float    @default(0.0)
+  
+  context     String
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([agentId])
+  @@index([successRate])
+}
+
+model AgentLearning {
+  id             String   @id @default(cuid())
+  agentId        String
+  
+  learnedPattern String
+  sourceAgent    String
+  taskCategory   String   @default("general")
+  
+  appliedCount   Int      @default(0)
+  successCount   Int      @default(0)
+  successRate    Float    @default(0.0)
+  avgLift        Float    @default(0.0)
+  liftSamples    Int      @default(0)
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
+  
+  @@index([agentId])
+  @@index([taskCategory])
+  @@index([avgLift])
+  @@index([successRate])
+}
+
+model JudgeResult {
+  id            String   @id @default(cuid())
+  taskId         String   @unique
+  task           Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  winnerAgentId  String
+  summary        String
+  judgedAt       DateTime
+  judgeMode      String   @default("single")
+  judgePromptVersion String @default("judge-v2")
+  criteriaWeights String   @default("{\"accuracy\":0.3,\"completeness\":0.3,\"clarity\":0.2,\"insight\":0.2}")
+  judgeRuns      String?
+  scores         String
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([winnerAgentId])
+  @@index([judgedAt])
+}
+
+model SkillUsage {
+  id         String   @id @default(cuid())
+  taskId     String
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  agentId    String
+  skillName  String
+  input      String?
+  summary    String
+  success    Boolean
+  durationMs Int
+  turnIndex  Int      @default(0)
+  callIndex  Int      @default(0)
+  timestamp  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([taskId])
+  @@index([agentId])
+  @@index([skillName])
+  @@index([timestamp])
+  @@index([taskId, agentId])
+}
+
+model LearningObservation {
+  id                String   @id @default(cuid())
+  taskId             String
+  task               Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  agentId            String
+  persona            String
+  outcomeType        String   @default("loss_pattern")
+  taskCategory       String   @default("general")
+
+  scoreTotal         Int      @default(0)
+  scoreBaseTotal     Int      @default(0)
+  scoreAccuracy      Float    @default(0.0)
+  scoreCompleteness  Float    @default(0.0)
+  scoreClarity       Float    @default(0.0)
+  scoreInsight       Float    @default(0.0)
+  judgeMode          String   @default("single")
+  judgePromptVersion String   @default("judge-v2")
+
+  toolPath           String   @default("no-tools")
+  skillCount         Int      @default(0)
+  verificationSteps  Int      @default(0)
+  usedSearchFirst    Boolean  @default(false)
+  pattern            String
+  payload            String?
+
+  createdAt          DateTime @default(now())
+
+  @@index([taskId])
+  @@index([agentId])
+  @@index([outcomeType])
+  @@index([taskCategory])
+  @@index([scoreTotal])
+  @@index([createdAt])
+}

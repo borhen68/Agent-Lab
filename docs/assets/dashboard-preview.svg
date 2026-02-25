@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="820" viewBox="0 0 1400 820">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#040712" />
+      <stop offset="100%" stop-color="#0c0f1b" />
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#12172a" />
+      <stop offset="100%" stop-color="#1a1126" />
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#22d3ee" />
+    </linearGradient>
+    <linearGradient id="violet" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8b5cf6" />
+      <stop offset="100%" stop-color="#ec4899" />
+    </linearGradient>
+    <linearGradient id="amber" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#ef4444" />
+    </linearGradient>
+  </defs>
+
+  <rect width="1400" height="820" fill="url(#bg)" />
+
+  <text x="64" y="64" fill="#f8fafc" font-size="38" font-family="Inter, Arial, sans-serif" font-weight="700">
+    Agent Strategy Lab - Dashboard Preview
+  </text>
+  <text x="64" y="92" fill="#94a3b8" font-size="18" font-family="Inter, Arial, sans-serif">
+    3 competing agents, evidence-backed judging, confidence gating
+  </text>
+
+  <rect x="56" y="122" width="1288" height="176" rx="16" fill="url(#panel)" stroke="#334155" />
+  <text x="88" y="162" fill="#cbd5e1" font-size="16" font-family="Inter, Arial, sans-serif">Prompt</text>
+  <rect x="88" y="178" width="1160" height="70" rx="10" fill="#090d1a" stroke="#334155" />
+  <text x="104" y="221" fill="#64748b" font-size="16" font-family="Inter, Arial, sans-serif">
+    "Fix this failing TypeScript test and explain why the bug happened."
+  </text>
+  <rect x="88" y="258" width="210" height="30" rx="14" fill="#1e40af" />
+  <text x="118" y="278" fill="#e2e8f0" font-size="14" font-family="Inter, Arial, sans-serif">Launch Race</text>
+  <text x="320" y="278" fill="#22c55e" font-size="14" font-family="Inter, Arial, sans-serif">Provider ready</text>
+  <text x="430" y="278" fill="#22d3ee" font-size="14" font-family="Inter, Arial, sans-serif">Domain: Coding</text>
+  <text x="560" y="278" fill="#f59e0b" font-size="14" font-family="Inter, Arial, sans-serif">Objective judge: coding-v1</text>
+
+  <rect x="56" y="328" width="412" height="220" rx="16" fill="#0b1326" stroke="#2563eb" />
+  <text x="84" y="366" fill="#dbeafe" font-size="24" font-family="Inter, Arial, sans-serif" font-weight="700">The Analyst</text>
+  <rect x="84" y="390" width="356" height="8" rx="4" fill="#1e3a8a" />
+  <rect x="84" y="390" width="280" height="8" rx="4" fill="url(#blue)" />
+  <text x="84" y="428" fill="#93c5fd" font-size="14" font-family="Inter, Arial, sans-serif">Tests passed: 7/8</text>
+  <text x="84" y="454" fill="#93c5fd" font-size="14" font-family="Inter, Arial, sans-serif">Lint: clean</text>
+  <text x="84" y="480" fill="#93c5fd" font-size="14" font-family="Inter, Arial, sans-serif">Judge score: 34/40</text>
+  <text x="84" y="506" fill="#cbd5e1" font-size="13" font-family="Inter, Arial, sans-serif">"Added guard for undefined payload before map()."</text>
+
+  <rect x="494" y="328" width="412" height="220" rx="16" fill="#1a1030" stroke="#8b5cf6" />
+  <text x="522" y="366" fill="#ede9fe" font-size="24" font-family="Inter, Arial, sans-serif" font-weight="700">The Lateral Thinker</text>
+  <rect x="522" y="390" width="356" height="8" rx="4" fill="#4c1d95" />
+  <rect x="522" y="390" width="220" height="8" rx="4" fill="url(#violet)" />
+  <text x="522" y="428" fill="#ddd6fe" font-size="14" font-family="Inter, Arial, sans-serif">Tests passed: 5/8</text>
+  <text x="522" y="454" fill="#ddd6fe" font-size="14" font-family="Inter, Arial, sans-serif">Lint: warning</text>
+  <text x="522" y="480" fill="#ddd6fe" font-size="14" font-family="Inter, Arial, sans-serif">Judge score: 29/40</text>
+  <text x="522" y="506" fill="#cbd5e1" font-size="13" font-family="Inter, Arial, sans-serif">"Alternative patch improves readability but misses edge case."</text>
+
+  <rect x="932" y="328" width="412" height="220" rx="16" fill="#22110e" stroke="#f59e0b" />
+  <text x="960" y="366" fill="#fef3c7" font-size="24" font-family="Inter, Arial, sans-serif" font-weight="700">The Devil's Advocate</text>
+  <rect x="960" y="390" width="356" height="8" rx="4" fill="#78350f" />
+  <rect x="960" y="390" width="246" height="8" rx="4" fill="url(#amber)" />
+  <text x="960" y="428" fill="#fde68a" font-size="14" font-family="Inter, Arial, sans-serif">Tests passed: 6/8</text>
+  <text x="960" y="454" fill="#fde68a" font-size="14" font-family="Inter, Arial, sans-serif">Lint: clean</text>
+  <text x="960" y="480" fill="#fde68a" font-size="14" font-family="Inter, Arial, sans-serif">Judge score: 31/40</text>
+  <text x="960" y="506" fill="#cbd5e1" font-size="13" font-family="Inter, Arial, sans-serif">"Caught null-input risk and tightened error handling."</text>
+
+  <rect x="56" y="576" width="1288" height="188" rx="16" fill="#0c1428" stroke="#334155" />
+  <text x="84" y="616" fill="#22c55e" font-size="22" font-family="Inter, Arial, sans-serif" font-weight="700">
+    Winner: The Analyst (34/40)
+  </text>
+  <text x="84" y="646" fill="#cbd5e1" font-size="15" font-family="Inter, Arial, sans-serif">
+    Confidence Gate: PASS (total >= 26, margin >= 2, accuracy >= 6.5)
+  </text>
+  <text x="84" y="674" fill="#cbd5e1" font-size="15" font-family="Inter, Arial, sans-serif">
+    Why it won: highest objective coding score + strongest evidence-backed accuracy.
+  </text>
+  <text x="84" y="704" fill="#94a3b8" font-size="14" font-family="Inter, Arial, sans-serif">
+    Share URL: /race/cmm2example123
+  </text>
+</svg>
